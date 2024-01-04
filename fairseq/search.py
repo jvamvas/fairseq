@@ -696,7 +696,11 @@ class Sampling(Search):
         elif self.sampling_epsilon_cutoff > 0:
             # only sample from words with probability >= epsilon_cutoff
             probs = lprobs.exp_()
-            probs[probs < self.sampling_epsilon_cutoff] = 0
+            indices_to_remove = probs < self.sampling_epsilon_cutoff
+            # Keep highest-probability word even if it is lower than epsilon_cutoff
+            top_prob, top_index = probs.topk(1, dim=2)
+            indices_to_remove = indices_to_remove & (probs < top_prob.expand_as(probs))
+            probs[indices_to_remove] = 0
         elif self.sampling_topk > 0:
             # only sample from top-k candidates
             lprobs, top_indices = lprobs.topk(self.sampling_topk)
