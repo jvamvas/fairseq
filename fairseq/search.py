@@ -621,11 +621,13 @@ class DiverseBeamSearch(Search):
 class Sampling(Search):
     sampling_topk: int
     sampling_topp: float
+    sampling_epsilon_cutoff: float
 
-    def __init__(self, tgt_dict, sampling_topk=-1, sampling_topp=-1.0):
+    def __init__(self, tgt_dict, sampling_topk=-1, sampling_topp=-1.0, sampling_epsilon_cutoff=0.0):
         super().__init__(tgt_dict)
         self.sampling_topk = sampling_topk
         self.sampling_topp = sampling_topp
+        self.sampling_epsilon_cutoff = sampling_epsilon_cutoff
 
     def _sample_topp(self, lprobs):
         """Sample among the smallest set of elements whose cumulative probability mass exceeds p.
@@ -691,6 +693,10 @@ class Sampling(Search):
         if self.sampling_topp > 0:
             # only sample from the smallest set of words whose cumulative probability mass exceeds p
             probs, top_indices = self._sample_topp(lprobs)
+        elif self.sampling_epsilon_cutoff > 0:
+            # only sample from words with probability >= epsilon_cutoff
+            probs = lprobs.exp_()
+            probs[probs < self.sampling_epsilon_cutoff] = 0
         elif self.sampling_topk > 0:
             # only sample from top-k candidates
             lprobs, top_indices = lprobs.topk(self.sampling_topk)
@@ -723,7 +729,7 @@ class Sampling(Search):
         scores_buf = scores_buf.log_().view(bsz, -1)
 
         # remap indices if using top-k or top-P sampling
-        if self.sampling_topk > 0 or self.sampling_topp > 0:
+        if self.sampling_topk > 0 or self.sampling_topp > 0 or self.sampling_epsilon_cutoff > 0:
             indices_buf = torch.gather(
                 top_indices.expand(bsz, beam_size, -1),
                 dim=2,
