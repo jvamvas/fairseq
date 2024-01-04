@@ -701,6 +701,7 @@ class Sampling(Search):
             top_prob, top_index = probs.topk(1, dim=2)
             indices_to_remove = indices_to_remove & (probs < top_prob.expand_as(probs))
             probs[indices_to_remove] = 0
+            top_indices = torch.empty(0).to(probs)
         elif self.sampling_topk > 0:
             # only sample from top-k candidates
             lprobs, top_indices = lprobs.topk(self.sampling_topk)
@@ -733,7 +734,7 @@ class Sampling(Search):
         scores_buf = scores_buf.log_().view(bsz, -1)
 
         # remap indices if using top-k or top-P sampling
-        if self.sampling_topk > 0 or self.sampling_topp > 0 or self.sampling_epsilon_cutoff > 0:
+        if self.sampling_topk > 0 or self.sampling_topp > 0:
             indices_buf = torch.gather(
                 top_indices.expand(bsz, beam_size, -1),
                 dim=2,
