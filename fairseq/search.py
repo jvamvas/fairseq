@@ -694,6 +694,7 @@ class Sampling(Search):
             # only sample from the smallest set of words whose cumulative probability mass exceeds p
             probs, top_indices = self._sample_topp(lprobs)
         elif self.sampling_epsilon_cutoff > 0:
+            raise RuntimeError(self.sampling_epsilon_cutoff)
             # only sample from words with probability >= epsilon_cutoff
             probs = lprobs.exp_()
             indices_to_remove = probs < self.sampling_epsilon_cutoff
