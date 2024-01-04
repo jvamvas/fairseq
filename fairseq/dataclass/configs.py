@@ -899,7 +899,7 @@ class GenerationConfig(FairseqDataclass):
         },
     )
     sampling_epsilon_cutoff: float = field(
-        default=0.0,
+        default=-1.0,
     )
     constraints: Optional[GENERATION_CONSTRAINTS_CHOICES] = field(
         default=None,
